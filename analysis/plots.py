@@ -52,8 +52,8 @@ def trend_plot(obj, days=7, surgery_date=None, linear_trend=False):
         plt.plot(df_mean.index + 0.5, df_mean.get_values(), 'o', color='orange', zorder=10)
 
         if linear_trend:
-            x_lin = df_mean.index[surgery_index + 1:] + 0.5
-            y_lin = df_mean.get_values()[surgery_index + 1:, 0]
+            x_lin = df_mean.index[df_mean.index >= surgery_index] + 0.5
+            y_lin = df_mean.get_values()[df_mean.index >= surgery_index, 0]
             not_nan = np.where(np.isfinite(y_lin))[0]
             z = np.poly1d(np.polyfit(x_lin[not_nan], y_lin[not_nan], 1))
             wpm = 365/7/12  # Weeks per month
