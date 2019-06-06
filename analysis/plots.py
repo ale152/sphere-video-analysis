@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from datetime import datetime, timedelta
 from matplotlib import pyplot as plt
+from scipy.stats import linregress
 
 
 def trend_plot(obj, days=7, surgery_date=None, linear_trend=False):
@@ -58,6 +59,14 @@ def trend_plot(obj, days=7, surgery_date=None, linear_trend=False):
             wpm = 365/7/12  # Weeks per month
             plt.plot(x_lin, z(x_lin), '--r', label='Trend: %+.2E m/s/month' % (z[1] * wpm))
             plt.legend()
+            slope, intercept, r_value, p_value, std_err = linregress(x_lin, y_lin)
+            print('R square trend: {}'.format(r_value))
+        else:
+            x_lin = df_mean.index + 0.5
+            y_lin = df_mean.get_values()[:, 0]
+            slope, intercept, r_value, p_value, std_err = linregress(x_lin, y_lin)
+            print('R square trend: {}'.format(r_value))
+
 
         plt.title('Cluster {}'.format(cluster_i))
         plt.xlabel('Week number')
