@@ -5,7 +5,7 @@ from matplotlib import pyplot as plt
 from scipy.stats import linregress
 
 
-def trend_plot(obj, days=7, surgery_date=None, linear_trend=False, limit=None):
+def trend_plot(obj, days=7, surgery_date=None, aggregate='mean', linear_trend=False, limit=None):
     period = '%dD' % days
     # Convert the file name into a date object
     figures = []
@@ -35,7 +35,12 @@ def trend_plot(obj, days=7, surgery_date=None, linear_trend=False, limit=None):
 
         dates_ind = dates.searchsorted(df.index, side='right') - 1
         grouped = df.groupby(dates_ind)
-        df_mean = grouped.mean()
+        if aggregate == 'mean':
+            df_mean = grouped.mean()
+        elif aggregate == 'sum':
+            df_mean = grouped.sum()
+        else:
+            raise Exception('Aggregate mode {} not understood'.format(aggregate))
 
         fig = plt.figure(figsize=(5, 3))
         figures.append(fig)
