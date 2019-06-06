@@ -5,7 +5,7 @@ from matplotlib import pyplot as plt
 from scipy.stats import linregress
 
 
-def trend_plot(obj, days=7, surgery_date=None, linear_trend=False):
+def trend_plot(obj, days=7, surgery_date=None, linear_trend=False, limit=None):
     period = '%dD' % days
     # Convert the file name into a date object
     figures = []
@@ -71,5 +71,7 @@ def trend_plot(obj, days=7, surgery_date=None, linear_trend=False):
         plt.title('Cluster {}'.format(cluster_i))
         plt.xlabel('Week number')
 
-        plt.ylim([0, 1])
+        if limit:
+            plt.ylim(limit)
+
     return figures
