@@ -34,11 +34,14 @@ class WalkingAnalysis:
         self.load_data()
 
         # Initialise empty variables
+        self.metrics = {}
+        self.metrics['speed'] = np.zeros((n_seq))
+        self.metrics['duration'] = np.zeros((n_seq))
+        self.metrics['bouts'] = np.zeros((n_seq))
+        self.metrics['distance'] = np.zeros((n_seq))
+        self.metrics['snr'] = np.zeros((n_seq))
         self.all_box_loc = np.zeros((n_seq, 6))
         self.all_box_shape = np.zeros((n_seq, 2))
-        self.all_speed = np.zeros((n_seq))
-        self.all_duration = np.zeros((n_seq))
-        self.all_snr = np.zeros((n_seq))
         self.all_timestamp = np.zeros((n_seq))
         self.all_good = np.zeros((n_seq))
         self.clusters = np.zeros((n_seq))
@@ -83,9 +86,11 @@ class WalkingAnalysis:
         n_seq = len(self.meta_list)
         self.all_box_loc = np.zeros((n_seq, 6))
         self.all_box_shape = np.zeros((n_seq, 2))
-        self.all_speed = np.zeros((n_seq))
-        self.all_duration = np.zeros((n_seq))
-        self.all_snr = np.zeros((n_seq))
+        self.metrics['speed'] = np.zeros((n_seq))
+        self.metrics['duration'] = np.zeros((n_seq))
+        self.metrics['bouts'] = np.zeros((n_seq))
+        self.metrics['distance'] = np.zeros((n_seq))
+        self.metrics['snr'] = np.zeros((n_seq))
         self.all_timestamp = np.zeros((n_seq))
         self.all_good = np.zeros((n_seq))
         self.clusters = np.zeros((n_seq))
@@ -94,8 +99,16 @@ class WalkingAnalysis:
         for vi in tqdm(range(len(self.meta_list))):
             profile = self.store_profile[vi, :]
             speed, duration, pos = walking_speed(profile, speed_thr, duration_thr)
-            self.all_duration[vi] = duration
-            self.all_speed[vi] = speed
+            self.metrics['speed'][vi] = speed
+            self.metrics['duration'][vi] = duration
+            self.metrics['bouts'][vi] = 1
+
+            # Calculate the distance travelled
+            top = self.store_boxes[vi, :, 5:8] / 1000
+            top -= top[0, ...]
+            time = self.store_boxes[vi, :, 0]
+            dist = np.trapz(top, time, axis=0)
+            self.metrics['distance'][vi] = np.sqrt(np.square(dist[0]) + np.square(dist[2]))
 
             box_data = self.store_boxes[vi, ...]
             self.all_timestamp[vi] = box_data[0, 0]
@@ -106,12 +119,14 @@ class WalkingAnalysis:
             self.all_box_loc[vi] = box_data[50, -6:] / 1000
 
         # Remove the non valid walking speeds
-        good = np.where(np.logical_not(np.isnan(self.all_speed)))[0]
+        good = np.where(np.logical_not(np.isnan(self.metrics['speed'])))[0]
         self.all_box_loc = self.all_box_loc[good, :]
         self.all_box_shape = self.all_box_shape[good, :]
-        self.all_speed = self.all_speed[good]
-        self.all_duration = self.all_duration[good]
-        self.all_snr = self.all_snr[good]
+        self.metrics['speed'] = self.metrics['speed'][good]
+        self.metrics['bouts'] = self.metrics['bouts'][good]
+        self.metrics['distance'] = self.metrics['distance'][good]
+        self.metrics['duration'] = self.metrics['duration'][good]
+        self.metrics['snr'] = self.metrics['snr'][good]
         self.all_timestamp = self.all_timestamp[good]
         self.all_good = good
         self.clusters = self.clusters[good]
@@ -119,7 +134,7 @@ class WalkingAnalysis:
 
     def cluster(self, by_location, by_participant, loc_dist=0.2, loc_min=10, gmm_n=2):
         # Reset the clusters
-        n_meta = len(self.all_speed)
+        n_meta = len(self.metrics['speed'])
         self.clusters = np.zeros((n_meta, 1))
         self.n_clusters = 1
 
@@ -130,7 +145,7 @@ class WalkingAnalysis:
 
         # The second clustering is based on the 3D bounding box shape and STS speed, for each location cluster
         if by_participant:
-            features = np.hstack((self.all_box_shape, self.all_speed))
+            features = np.hstack((self.all_box_shape, self.metrics['speed']))
             self.clusters, self.n_clusters = gmm_clustering(features, gmm_n, pre_clusters=self.clusters)
 
 
@@ -166,16 +181,20 @@ if __name__ == '__main__':
 
     # %% Weekly plot
     surgery_date = get_surgery_date(house_id)
-    trend_plot(wks, 7, surgery_date)
+    trend_plot(wks, 'speed', 7, surgery_date, limit=[0, 1])
+    trend_plot(wks, 'bouts', 7, surgery_date, aggregate='sum')
+    trend_plot(wks, 'distance', 7, surgery_date)
+    # trend_plot_bouts(wks, 7, surgery_date)
+    # trend_plot_distance(wks, 7, surgery_date)
 
     # %% Investigate full silhouette
-    wid = 10
-    play_walking_sequence(wks.all_good[wid], wks)
+    # wid = 10
+    # play_walking_sequence(wks.all_good[wid], wks)
 
-    start = datetime.datetime.fromtimestamp(wks.all_timestamp[wid])
-    end = datetime.datetime.fromtimestamp(wks.all_timestamp[wid] + 10)
-    play_bson_silhouette(r'G:\HouseData-Sphere\4954\backups', start, end, 'liv')
+    # start = datetime.datetime.fromtimestamp(wks.all_timestamp[wid])
+    # end = datetime.datetime.fromtimestamp(wks.all_timestamp[wid] + 10)
+    # play_bson_silhouette(r'G:\HouseData-Sphere\4954\backups', start, end, 'liv')
 
-    start = datetime.datetime.fromtimestamp(wks.all_timestamp[wid] - 10)
-    end = datetime.datetime.fromtimestamp(wks.all_timestamp[wid] + 50)
-    play_bson_silhouette_and_wearable(r'G:\HouseData-Sphere\4954\backups', start, end, 'liv', export_video=True)
+    # start = datetime.datetime.fromtimestamp(wks.all_timestamp[wid] - 10)
+    # end = datetime.datetime.fromtimestamp(wks.all_timestamp[wid] + 50)
+    # play_bson_silhouette_and_wearable(r'G:\HouseData-Sphere\4954\backups', start, end, 'liv', export_video=True)

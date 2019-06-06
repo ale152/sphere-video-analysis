@@ -5,13 +5,13 @@ from matplotlib import pyplot as plt
 from scipy.stats import linregress
 
 
-def trend_plot(obj, days=7, surgery_date=None, aggregate='mean', linear_trend=False, limit=None):
+def trend_plot(obj, target_metric, days=7, surgery_date=None, aggregate='mean', linear_trend=False, limit=None):
     period = '%dD' % days
     # Convert the file name into a date object
     figures = []
     for cluster_i in range(obj.n_clusters):
         select = np.where(obj.clusters == cluster_i)[0]
-        sub_speed = obj.all_speed[select]
+        sub_speed = obj.metrics[target_metric][select]
         sub_date = [datetime.fromtimestamp(bf) for bf in obj.all_timestamp[select]]
         df = pd.DataFrame(data=sub_speed, index=sub_date)
 
@@ -73,10 +73,11 @@ def trend_plot(obj, days=7, surgery_date=None, aggregate='mean', linear_trend=Fa
             print('R square trend: {}'.format(r_value))
 
 
-        plt.title('Cluster {}'.format(cluster_i))
+        plt.title('{} - Cluster {}'.format(target_metric, cluster_i))
         plt.xlabel('Week number')
 
         if limit:
             plt.ylim(limit)
 
     return figures
+

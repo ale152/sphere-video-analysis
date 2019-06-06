@@ -36,8 +36,9 @@ class SitToStand:
         n_sts = len(self.meta_list)
         self.all_box_loc = np.zeros((n_sts, 6))
         self.all_box_shape = np.zeros((n_sts, 2))
-        self.all_speed = np.zeros((n_sts))
-        self.all_snr = np.zeros((n_sts))
+        self.metrics = {}
+        self.metrics['speed'] = np.zeros((n_sts))
+        self.metrics['snr'] = np.zeros((n_sts))
         self.all_timestamp = np.zeros((n_sts))
         self.clusters = np.zeros((n_sts))
         self.n_clusters = 1
@@ -65,16 +66,16 @@ class SitToStand:
             cy = box_data[:, 6] / 1000  # Use the y coordinate of the upper edge of the 3D bounding box
             time = box_data[:, 0]
             speed, snr = speed_of_ascent(cy, time, self.target)
-            self.all_speed[vi] = speed
-            self.all_snr[vi] = snr
+            self.metrics['speed'][vi] = speed
+            self.metrics['snr'][vi] = snr
 
     def filter(self, snr_thr=False):
         if snr_thr:
-            good = np.where(self.all_snr >= snr_thr)[0]
+            good = np.where(self.metrics['snr'] >= snr_thr)[0]
             self.all_box_loc = self.all_box_loc[good, :]
             self.all_box_shape = self.all_box_shape[good, :]
-            self.all_speed = self.all_speed[good, :]
-            self.all_snr = self.all_snr[good]
+            self.metrics['speed'] = self.metrics['speed'][good, :]
+            self.metrics['snr'] = self.metrics['snr'][good]
             self.all_timestamp = self.all_timestamp[good]
             self.clusters = self.clusters[good]
 
@@ -91,7 +92,7 @@ class SitToStand:
 
         # The second clustering is based on the 3D bounding box shape and STS speed, for each location cluster
         if by_participant:
-            features = np.hstack((self.all_box_shape, self.all_speed[:, None]))
+            features = np.hstack((self.all_box_shape, self.metrics['speed'][:, None]))
             self.clusters, self.n_clusters = gmm_clustering(features, gmm_n, pre_clusters=self.clusters)
 
 
@@ -101,9 +102,9 @@ if __name__ == '__main__':
     # labels_path = r'I:\STS_zipped_overlap_50\automatic_labels_{}.npz'.format(house_id)
     house_id = 8145
     data_path = r'G:\STS_sequences_overlap\{}'.format(house_id)
-    labels_path = r'G:\STS_sequences_overlap\{}\labels_{}_livingroom_revised.json'.format(house_id, house_id)
-    # labels_path = r"C:\Users\am14795\Dropbox\documenti\SPHERE\keras_play\STS_classifier\automatic_labels_%d.json" % \
-    #               house_id
+    # labels_path = r'G:\STS_sequences_overlap\{}\labels_{}_livingroom_revised.json'.format(house_id, house_id)
+    labels_path = r"C:\Users\am14795\Dropbox\documenti\SPHERE\keras_play\STS_classifier\automatic_labels_%d.json" % \
+                  house_id
     output_path = r'G:\STS_results\transition_derivative'
     # min_dist = 0.2#0.2#0.25  # In meters. The standard sofa cushion size is 18 inches, about 0.5 m
     # min_n_sit = 10#50#10  # Min number of times someone must sit there to be considered a sitting location
@@ -133,7 +134,7 @@ if __name__ == '__main__':
     # play_sts_sequence(sts.all_speed.argsort()[-1], sts)
 
     surgery_date = get_surgery_date(house_id)
-    trend_plot(sts, 7, surgery_date, linear_trend=True)
+    trend_plot(sts, 'speed', 7, surgery_date, linear_trend=True)
 
     # # Set the same limits for all the figures
     # xlim = [np.min(np.array([bf.gca().get_xlim() for bf in figures]), axis=0)[0],
