@@ -20,6 +20,9 @@ def read_room_uid(room_path, room, use_bzip):
 
     room_path = os.path.join(room_path, room_file)
     fid = open_bzip(room_path, use_bzip)
+    if fid is None:
+        return None
+
     room_data = bson.decode_file_iter(fid)
     try:
         room_data = next(room_data)
@@ -33,8 +36,12 @@ def read_room_uid(room_path, room, use_bzip):
 
 
 def open_bzip(file, use_bzip):
-    if use_bzip:
-        fid = bz2.open(file)
-    else:
-        fid = open(file, 'rb')
-    return fid
+    try:
+        if use_bzip:
+            fid = bz2.open(file)
+        else:
+            fid = open(file, 'rb')
+        return fid
+    except FileNotFoundError:
+        print('File not found, skipping: {}'.format(file))
+        return None
