@@ -8,11 +8,12 @@ from datetime import datetime
 from sphere.utils.mongo_utils import open_bzip, read_room_uid
 
 class HouseData:
-    def __init__(self, day_folders_path, output_folder, cfg, mode):
+    def __init__(self, day_folders_path, output_folder, cfg, room, mode):
         """Define an object to load data from the bson mongo dumps. Data is accessed by creating the object,
         opening a day and using the self.data"""
         self.day_folders_path = day_folders_path
         self.cfg = cfg
+        self.room = room
         self.mode = mode
 
         self.room_uid = None
@@ -59,7 +60,7 @@ class HouseData:
         # The room data is only needed in video mode, not wearable
         if self.mode == 'VID':
             room_path = os.path.join(self.day_folders_path, day, 'sphere')
-            bf = read_room_uid(room_path, self.cfg['room'], use_bzip)
+            bf = read_room_uid(room_path, self.room, use_bzip)
             if bf is not None:
                 self.room_uid = bf
 

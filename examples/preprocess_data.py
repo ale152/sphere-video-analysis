@@ -9,12 +9,11 @@ from data_loader.mongo_loader import HouseData, VidSequence
 
 
 if __name__ == '__main__':
-    list_houses_path = r'J:\HouseData-Sphere'
+    list_houses_path = r'G:\HouseData-Sphere'
     # data_path = r'G:\HouseData-Sphere\4954\backups'  # The folder with the days folders
-    output = r'G:\STS_zipped_overlap_50_new'  # Where video sequences will be saved
+    output = r'G:\STS_zipped_overlap_50'  # Where video sequences will be saved
 
     cfg = {'dt': 0.3,  # Threshold (seconds) for considering frames consecutive
-           'room': 'hal',  # Either 'kit', 'hal', or 'liv'
            'featid_only': False,  # Only saves the frames containing ReID feature
            'text_verbose': False,
            'zip_n_max': 1000,  # Number of files per zip. 1000 results in 100-250 MB zip files
@@ -25,15 +24,15 @@ if __name__ == '__main__':
            'vid_frames': 100  # Maximum length of the sequence (frames)
            }
 
-    list_houses = ['3099']
+    list_houses = [['9665', 'hal']]
 
-    for house in list_houses:
-        print('Processing {} room {}'.format(house, cfg['room']))
+    for house, room in list_houses:
+        print('Processing {} room {}'.format(house, room))
         print('Processing house {}'.format(house))
         data_path = os.path.join(list_houses_path, house, 'backups')
-        output_folder = os.path.join(output, house, cfg['room'])
+        output_folder = os.path.join(output, house, room)
 
-        house_data = HouseData(data_path, output_folder, cfg, mode='VID')
+        house_data = HouseData(data_path, output_folder, cfg, room, mode='VID')
 
         # Initialise the first zip file
         zip_store = ZipStore(cfg, output_folder)
